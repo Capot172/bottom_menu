@@ -23,7 +23,9 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         bottomNavigationView = findViewById(R.id.bottom_navigation);
-        getSupportFragmentManager().beginTransaction().replace(R.id.container, scanFragment).commit();
+        getSupportFragmentManager().beginTransaction().replace(R.id.container, scanFragment).commit(); //set the begin fragment to scan
+        bottomNavigationView.setSelectedItemId(R.id.Scan); //set the begin tab to scan
+
         bottomNavigationView.setOnItemSelectedListener(new NavigationBarView.OnItemSelectedListener() {
             @Override
             public boolean onNavigationItemSelected(@NonNull MenuItem item) {

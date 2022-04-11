@@ -5,12 +5,14 @@
       <map>
         <entry key="..\:/bottom_menu/app/src/main/res/drawable-v24/ic_baseline_favorite_24.xml" value="0.2725" />
         <entry key="..\:/bottom_menu/app/src/main/res/drawable/background_camera.xml" value="0.3355" />
+        <entry key="..\:/bottom_menu/app/src/main/res/drawable/ic_flash_off.xml" value="0.26" />
+        <entry key="..\:/bottom_menu/app/src/main/res/drawable/ic_flash_on.xml" value="0.26" />
         <entry key="..\:/bottom_menu/app/src/main/res/layout/activity_main.xml" value="0.33" />
         <entry key="..\:/bottom_menu/app/src/main/res/layout/bottom_dialog.xml" value="0.22" />
         <entry key="..\:/bottom_menu/app/src/main/res/layout/fragment_create.xml" value="0.35260416666666666" />
         <entry key="..\:/bottom_menu/app/src/main/res/layout/fragment_favorite.xml" value="0.35260416666666666" />
         <entry key="..\:/bottom_menu/app/src/main/res/layout/fragment_history.xml" value="0.36666666666666664" />
-        <entry key="..\:/bottom_menu/app/src/main/res/layout/fragment_scan.xml" value="0.33" />
+        <entry key="..\:/bottom_menu/app/src/main/res/layout/fragment_scan.xml" value="0.22" />
         <entry key="..\:/bottom_menu/app/src/main/res/layout/fragment_setting.xml" value="0.36666666666666664" />
         <entry key="..\:/bottom_menu/app/src/main/res/menu/bottom_navigation_menu.xml" value="0.36666666666666664" />
       </map>

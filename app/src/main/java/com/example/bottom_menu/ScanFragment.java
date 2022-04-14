@@ -29,6 +29,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.Toast;
 
 import com.google.android.gms.tasks.Task;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -99,26 +100,40 @@ public class ScanFragment extends Fragment {
 
     private void bindPreview(ProcessCameraProvider processCameraProvider) {
 
-        Preview preview = new Preview.Builder().build();
-        CameraSelector cameraSelector = new CameraSelector.Builder().requireLensFacing(CameraSelector.LENS_FACING_BACK).build();
+        Preview preview = new Preview.Builder()
+                .build();
+        CameraSelector cameraSelector = new CameraSelector.Builder()
+                .requireLensFacing(CameraSelector.LENS_FACING_BACK)
+                .build();
+
         preview.setSurfaceProvider(previewView.getSurfaceProvider());
+
         processCameraProvider.unbindAll();
-        ImageCapture imageCapture = new ImageCapture.Builder().build();
+
+        ImageCapture imageCapture = new ImageCapture
+                .Builder()
+                .build();
+
         ImageAnalysis imageAnalysis = new ImageAnalysis.Builder()
                 .setTargetResolution(new Size(1280, 720))
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .build();
+
         imageAnalysis.setAnalyzer(cameraExecutor,analyzer);
-        processCameraProvider.bindToLifecycle(this, cameraSelector, preview, imageCapture, imageAnalysis);
+
+        Camera camera = processCameraProvider.bindToLifecycle(this, cameraSelector, preview, imageCapture, imageAnalysis);
+
         btnFlashOn.setOnClickListener(view1 -> {
-            Camera cam = processCameraProvider.bindToLifecycle(this,cameraSelector, preview, imageCapture, imageAnalysis);
-            if ( cam.getCameraInfo().hasFlashUnit() ) {
-                cam.getCameraControl().enableTorch(!lightOn);
+            if ( camera.getCameraInfo().hasFlashUnit() ) {
+                camera.getCameraControl().enableTorch(!lightOn);
                 btnFlashOn.setVisibility(View.GONE);
                 btnFlashOff.setVisibility(View.VISIBLE);
+            } else {
+                Toast.makeText(getActivity(), "Your phone doesn't have a flash light", Toast.LENGTH_SHORT).show();
             }
 
         });
+
         previewView.setImplementationMode(PreviewView.ImplementationMode.COMPATIBLE);
     }
 
@@ -183,6 +198,16 @@ public class ScanFragment extends Fragment {
                         bd.fetchUrl(Objects.requireNonNull(barcode.getUrl()).getUrl());
                         String title = barcode.getUrl().getTitle();
                         String url = barcode.getUrl().getUrl();
+                        break;
+                    case Barcode.TYPE_CALENDAR_EVENT:
+                        break;
+                    case Barcode.TYPE_EMAIL:
+                        String address = barcode.getEmail().getAddress();
+                        String subject= barcode.getEmail().getSubject();
+                        String body = barcode.getEmail().getBody();
+                        break;
+                    case Barcode.TYPE_TEXT:
+                        String text = barcode.getDisplayValue();
                         break;
                 }
             }

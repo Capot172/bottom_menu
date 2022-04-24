@@ -2,8 +2,12 @@ package com.example.bottom_menu;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.Activity;
+import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.media.Image;
+import android.net.Uri;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
@@ -11,6 +15,7 @@ import androidx.annotation.NonNull;
 import android.graphics.Point;
 import android.graphics.Rect;
 
+import androidx.annotation.Nullable;
 import androidx.camera.core.Camera;
 import androidx.camera.core.CameraSelector;
 import androidx.camera.core.ImageAnalysis;
@@ -24,6 +29,7 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 
+import android.provider.MediaStore;
 import android.util.Size;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -39,6 +45,7 @@ import com.google.mlkit.vision.barcode.BarcodeScanning;
 import com.google.mlkit.vision.barcode.common.Barcode;
 import com.google.mlkit.vision.common.InputImage;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
@@ -47,13 +54,15 @@ import java.util.concurrent.Executors;
 
 public class ScanFragment extends Fragment {
 
+    public static final int GET_FROM_GALLERY = 3;
     private ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
     private ExecutorService cameraExecutor;
     public PreviewView previewView;
     private MyImageAnalyzer analyzer;
-    private ImageView btnFlashOn, btnFlashOff;
-    private final boolean lightOn = false;
+    private ImageView btnFlashOn, btnFlashOff, btnPhotoGallery;
+    private boolean lightOn = false;
 
+    @SuppressWarnings("deprecation")
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -62,10 +71,20 @@ public class ScanFragment extends Fragment {
         previewView = view.findViewById(R.id.previewView);
 
         btnFlashOn = view.findViewById(R.id.btn_flash_on);
+        btnFlashOn.setClickable(true);
+        btnFlashOn.setVisibility(View.VISIBLE);
+
         btnFlashOff = view.findViewById(R.id.btn_flash_off);
+        btnFlashOff.setClickable(false);
+        btnFlashOff.setVisibility(View.GONE);
+
+        btnPhotoGallery = view.findViewById(R.id.btn_gallery);
+        btnPhotoGallery.setOnClickListener(view1 -> startActivityForResult(new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI), GET_FROM_GALLERY));
 
         cameraExecutor = Executors.newSingleThreadExecutor();
         cameraProviderFuture = ProcessCameraProvider.getInstance(requireActivity());
+
+        //noinspection deprecation
         analyzer = new MyImageAnalyzer(getFragmentManager());
 
         cameraProviderFuture.addListener(() -> {
@@ -85,6 +104,7 @@ public class ScanFragment extends Fragment {
         return view;
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         if (requestCode == 101 && grantResults.length >0) {
@@ -95,6 +115,36 @@ public class ScanFragment extends Fragment {
                 e.printStackTrace();
             }
             bindPreview(Objects.requireNonNull(processCameraProvider));
+        }
+
+    }
+
+    @SuppressWarnings("deprecation")
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if(requestCode==GET_FROM_GALLERY && resultCode == Activity.RESULT_OK) {
+            assert data != null;
+            Uri selectedImage = data.getData();
+            Bitmap bitmap;
+            try {
+                bitmap = MediaStore.Images.Media.getBitmap(requireActivity().getApplicationContext().getContentResolver() , selectedImage);
+                InputImage image = InputImage.fromBitmap(bitmap, 0);
+                BarcodeScannerOptions options =
+                        new BarcodeScannerOptions.Builder()
+                                .setBarcodeFormats(
+                                        Barcode.FORMAT_QR_CODE,
+                                        Barcode.FORMAT_AZTEC,
+                                        Barcode.FORMAT_ALL_FORMATS)
+                                .build();
+                BarcodeScanner scanner = BarcodeScanning.getClient(options);
+                scanner.process(image)
+                        .addOnSuccessListener(this.analyzer::readerBarcodeData)
+                        .addOnFailureListener(Throwable::printStackTrace);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -126,12 +176,27 @@ public class ScanFragment extends Fragment {
         btnFlashOn.setOnClickListener(view1 -> {
             if ( camera.getCameraInfo().hasFlashUnit() ) {
                 camera.getCameraControl().enableTorch(!lightOn);
+                lightOn = !lightOn;
                 btnFlashOn.setVisibility(View.GONE);
+                btnFlashOn.setClickable(false);
                 btnFlashOff.setVisibility(View.VISIBLE);
+                btnFlashOff.setClickable(true);
             } else {
                 Toast.makeText(getActivity(), "Your phone doesn't have a flash light", Toast.LENGTH_SHORT).show();
             }
 
+        });
+        btnFlashOff.setOnClickListener(view -> {
+            if ( camera.getCameraInfo().hasFlashUnit() ) {
+                camera.getCameraControl().enableTorch(!lightOn);
+                lightOn = !lightOn;
+                btnFlashOn.setVisibility(View.VISIBLE);
+                btnFlashOn.setClickable(true);
+                btnFlashOff.setVisibility(View.GONE);
+                btnFlashOff.setClickable(false);
+            } else {
+                Toast.makeText(getActivity(), "Your phone doesn't have a flash light", Toast.LENGTH_SHORT).show();
+            }
         });
 
         previewView.setImplementationMode(PreviewView.ImplementationMode.COMPATIBLE);
@@ -193,16 +258,14 @@ public class ScanFragment extends Fragment {
                         break;
                     case Barcode.TYPE_URL:
                         if (!bd.isAdded()) {
-                            bd.show(fragmentManager, "");
+                            bd.show(fragmentManager, "URL BARCODE SCANNED");
                         }
                         bd.fetchUrl(Objects.requireNonNull(barcode.getUrl()).getUrl());
-                        String title = barcode.getUrl().getTitle();
-                        String url = barcode.getUrl().getUrl();
                         break;
                     case Barcode.TYPE_CALENDAR_EVENT:
                         break;
                     case Barcode.TYPE_EMAIL:
-                        String address = barcode.getEmail().getAddress();
+                        String address = Objects.requireNonNull(barcode.getEmail()).getAddress();
                         String subject= barcode.getEmail().getSubject();
                         String body = barcode.getEmail().getBody();
                         break;

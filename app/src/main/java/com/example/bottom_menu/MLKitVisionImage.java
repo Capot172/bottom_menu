@@ -27,7 +27,7 @@ public class MLKitVisionImage {
     private static final String TAG = "MLKIT";
     private static final String MY_CAMERA_ID = "my_camera_id";
 
-    private void imageFromBitmap(Bitmap bitmap) {
+    public void imageFromBitmap(Bitmap bitmap) {
         int rotationDegree = 0;
         // [START image_from_bitmap]
         InputImage image = InputImage.fromBitmap(bitmap, rotationDegree);
